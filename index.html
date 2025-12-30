@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qualification Agent - Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .chat-box {
+            padding: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.agent {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 15px;
+            border-top-left-radius: 0;
+        }
+        
+        .message.user {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            border-top-right-radius: 0;
+            margin-left: auto;
+            max-width: 80%;
+        }
+        
+        .input-area {
+            padding: 20px 30px 30px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #userMessage {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        #userMessage:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        #sendBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        #sendBtn:hover {
+            transform: scale(1.05);
+        }
+        
+        #sendBtn:active {
+            transform: scale(0.95);
+        }
+        
+        #sendBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Agent Qualificator</h1>
+            <p>Répondez aux questions pour compléter votre qualification</p>
+        </div>
+        
+        <div class="chat-box" id="chatBox">
+            <!-- Messages apparaîtront ici -->
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            ✅ Qualification complète ! Votre demande est en cours de traitement.
+        </div>
+        
+        <div class="loader" id="loader"></div>
+        
+        <div class="input-area">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="userMessage" 
+                    placeholder="Tapez votre réponse ici..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                >
+                <button id="sendBtn" onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
+        
+        // Variables globales
+        let clientId = null;
+        let conversationHistory = [];
+        
+        // Initialisation
+        window.onload = function() {
+            // Récupérer client_id depuis URL ou localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            clientId = urlParams.get('client_id') || localStorage.getItem('client_id');
+            
+            if (!clientId) {
+                // Générer un client_id si inexistant
+                clientId = 'web_' + Date.now();
+                localStorage.setItem('client_id', clientId);
+            }
+            
+            // Récupérer la première question depuis l'URL
+            const initialQuestion = urlParams.get('question');
+            if (initialQuestion) {
+                addMessage('agent', decodeURIComponent(initialQuestion));
+            }
+            
+            // Focus sur l'input
+            document.getElementById('userMessage').focus();
+        };
+        
+        // Ajouter un message au chat
+        function addMessage(type, text) {
+            const chatBox = document.getElementById('chatBox');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            chatBox.appendChild(messageDiv);
+            
+            // Scroll vers le bas
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // Ajouter à l'historique
+            conversationHistory.push({
+                role: type === 'agent' ? 'assistant' : 'user',
+                content: text
+            });
+        }
+        
+        // Envoyer le message
+        async function sendMessage() {
+            const input = document.getElementById('userMessage');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Afficher le message utilisateur
+            addMessage('user', message);
+            input.value = '';
+            
+            // Désactiver l'input et afficher le loader
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('loader').style.display = 'block';
+            
+            try {
+                // Envoyer au webhook
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        message: message,
+                        conversation_history: conversationHistory
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Cacher le loader
+                document.getElementById('loader').style.display = 'none';
+                
+                if (data.status === 'COMPLETE') {
+                    // Qualification terminée
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('userMessage').style.display = 'none';
+                    document.getElementById('sendBtn').style.display = 'none';
+                    
+                    addMessage('agent', '✅ Merci ! Votre qualification est complète. Nous revenons vers vous très prochainement.');
+                    
+                } else if (data.status === 'incomplete') {
+                    // Afficher la prochaine question
+                    addMessage('agent', data.question);
+                    
+                    // Réactiver l'input
+                    input.disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                    input.focus();
+                }
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('loader').style.display = 'none';
+                addMessage('agent', '❌ Une erreur est survenue. Veuillez réessayer.');
+                input.disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
