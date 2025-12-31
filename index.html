@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qualification Agent - Chat</title>
+    
+    <!-- Bibliothèque pour rendre le Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -25,9 +29,12 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
         }
         
         .header {
@@ -47,10 +54,19 @@
             font-size: 14px;
         }
         
+        .client-id-display {
+            background: #f9f9f9;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
         .chat-box {
             padding: 30px;
-            max-height: 400px;
             overflow-y: auto;
+            flex: 1;
         }
         
         .message {
@@ -74,6 +90,74 @@
             padding: 15px;
             border-radius: 15px;
             border-top-left-radius: 0;
+        }
+        
+        /* Styles pour le contenu Markdown */
+        .message.agent h1 {
+            font-size: 20px;
+            margin: 10px 0;
+            color: #667eea;
+        }
+        
+        .message.agent h2 {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #764ba2;
+        }
+        
+        .message.agent h3 {
+            font-size: 16px;
+            margin: 8px 0;
+            color: #333;
+        }
+        
+        .message.agent p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        
+        .message.agent ul,
+        .message.agent ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .message.agent li {
+            margin: 4px 0;
+        }
+        
+        .message.agent strong {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .message.agent em {
+            font-style: italic;
+        }
+        
+        .message.agent code {
+            background: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .message.agent hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 15px 0;
+        }
+        
+        .message.agent a {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        .message.agent blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+            margin: 10px 0;
+            color: #666;
         }
         
         .message.user {
@@ -143,7 +227,7 @@
             height: 20px;
             animation: spin 1s linear infinite;
             display: none;
-            margin: 0 auto;
+            margin: 20px auto;
         }
         
         @keyframes spin {
@@ -157,7 +241,7 @@
             padding: 20px;
             text-align: center;
             border-radius: 10px;
-            margin: 20px 0;
+            margin: 20px;
             display: none;
         }
     </style>
@@ -167,6 +251,10 @@
         <div class="header">
             <h1>🤖 Agent Qualificator</h1>
             <p>Répondez aux questions pour compléter votre qualification</p>
+        </div>
+        
+        <div class="client-id-display">
+            Session ID: <span id="clientIdDisplay"></span>
         </div>
         
         <div class="chat-box" id="chatBox">
@@ -179,7 +267,7 @@
         
         <div class="loader" id="loader"></div>
         
-        <div class="input-area">
+        <div class="input-area" id="inputArea">
             <div class="input-group">
                 <input 
                     type="text" 
@@ -193,7 +281,7 @@
     </div>
 
     <script>
-        // Configuration
+        // ⚠️ IMPORTANT : Remplacez par votre URL n8n
         const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
         
         // Variables globales
@@ -212,10 +300,16 @@
                 localStorage.setItem('client_id', clientId);
             }
             
+            // Afficher le client_id
+            document.getElementById('clientIdDisplay').textContent = clientId;
+            
             // Récupérer la première question depuis l'URL
             const initialQuestion = urlParams.get('question');
             if (initialQuestion) {
                 addMessage('agent', decodeURIComponent(initialQuestion));
+            } else {
+                // Message de bienvenue par défaut
+                addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
             }
             
             // Focus sur l'input
@@ -227,7 +321,14 @@
             const chatBox = document.getElementById('chatBox');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
-            messageDiv.textContent = text;
+            
+            // Convertir le Markdown en HTML si c'est un message agent
+            if (type === 'agent') {
+                messageDiv.innerHTML = marked.parse(text);
+            } else {
+                messageDiv.textContent = text;
+            }
+            
             chatBox.appendChild(messageDiv);
             
             // Scroll vers le bas
@@ -271,26 +372,32 @@
                 });
                 
                 const data = await response.json();
+                console.log('Response:', data);
                 
                 // Cacher le loader
                 document.getElementById('loader').style.display = 'none';
                 
-                if (data.status === 'COMPLETE') {
+                if (data.status === 'COMPLETE' || data.status === 'complete') {
                     // Qualification terminée
                     document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('userMessage').style.display = 'none';
-                    document.getElementById('sendBtn').style.display = 'none';
+                    document.getElementById('inputArea').style.display = 'none';
                     
                     addMessage('agent', '✅ Merci ! Votre qualification est complète. Nous revenons vers vous très prochainement.');
                     
-                } else if (data.status === 'incomplete') {
+                } else if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
                     // Afficher la prochaine question
-                    addMessage('agent', data.question);
+                    const question = data.question || data.agent_question || 'Pouvez-vous préciser votre demande ?';
+                    addMessage('agent', question);
                     
                     // Réactiver l'input
                     input.disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                     input.focus();
+                } else {
+                    // Réponse inattendue
+                    addMessage('agent', data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?');
+                    input.disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
                 }
                 
             } catch (error) {
