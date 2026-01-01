@@ -92,7 +92,6 @@
             border-top-left-radius: 0;
         }
         
-        /* Styles pour le contenu Markdown */
         .message.agent h1 {
             font-size: 20px;
             margin: 10px 0;
@@ -170,6 +169,19 @@
             max-width: 80%;
         }
         
+        .loading-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .loading-message.show {
+            display: block;
+        }
+        
         .input-area {
             padding: 20px 30px 30px;
             background: #f9f9f9;
@@ -226,8 +238,8 @@
             width: 20px;
             height: 20px;
             animation: spin 1s linear infinite;
-            display: none;
-            margin: 20px auto;
+            display: inline-block;
+            margin-left: 10px;
         }
         
         @keyframes spin {
@@ -258,14 +270,15 @@
         </div>
         
         <div class="chat-box" id="chatBox">
-            <!-- Messages apparaîtront ici -->
+            <div class="loading-message" id="loadingMessage">
+                ⏳ Préparation de votre qualification en cours...
+                <span class="loader"></span>
+            </div>
         </div>
         
         <div class="success-message" id="successMessage">
             ✅ Qualification complète ! Votre demande est en cours de traitement.
         </div>
-        
-        <div class="loader" id="loader"></div>
         
         <div class="input-area" id="inputArea">
             <div class="input-group">
@@ -281,21 +294,26 @@
     </div>
 
     <script>
-        // ⚠️ IMPORTANT : Remplacez par votre URL n8n
+        // ⚠️ IMPORTANT : URLs de vos webhooks n8n
         const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
+        const GET_QUESTION_URL = 'https://atefjarray.app.n8n.cloud/webhook/get-question';
         
         // Variables globales
         let clientId = null;
         let conversationHistory = [];
+        let pollingInterval = null;
+        let pollingAttempts = 0;
+        const MAX_POLLING_ATTEMPTS = 30; // 30 tentatives × 2 secondes = 1 minute max
         
         // Initialisation
         window.onload = function() {
-            // Récupérer client_id depuis URL ou localStorage
+            // Récupérer client_id et mode depuis URL
             const urlParams = new URLSearchParams(window.location.search);
             clientId = urlParams.get('client_id') || localStorage.getItem('client_id');
+            const mode = urlParams.get('mode');
+            const initialQuestion = urlParams.get('question');
             
             if (!clientId) {
-                // Générer un client_id si inexistant
                 clientId = 'web_' + Date.now();
                 localStorage.setItem('client_id', clientId);
             }
@@ -303,18 +321,76 @@
             // Afficher le client_id
             document.getElementById('clientIdDisplay').textContent = clientId;
             
-            // Récupérer la première question depuis l'URL
-            const initialQuestion = urlParams.get('question');
-            if (initialQuestion) {
+            // Si mode=initial → polling pour récupérer la première question
+            if (mode === 'initial') {
+                startPolling();
+            }
+            // Si question dans URL → afficher directement
+            else if (initialQuestion) {
                 addMessage('agent', decodeURIComponent(initialQuestion));
-            } else {
-                // Message de bienvenue par défaut
+                document.getElementById('userMessage').focus();
+            }
+            // Sinon → message de bienvenue par défaut
+            else {
                 addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
+                document.getElementById('userMessage').focus();
+            }
+        };
+        
+        // Démarrer le polling
+        function startPolling() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            loadingMsg.classList.add('show');
+            
+            // Désactiver l'input pendant le polling
+            document.getElementById('userMessage').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Polling toutes les 2 secondes
+            pollingInterval = setInterval(checkForQuestion, 2000);
+            
+            // Première vérification immédiate
+            checkForQuestion();
+        }
+        
+        // Vérifier si la question est prête
+        async function checkForQuestion() {
+            pollingAttempts++;
+            
+            // Arrêter après MAX_POLLING_ATTEMPTS tentatives
+            if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
+                clearInterval(pollingInterval);
+                document.getElementById('loadingMessage').classList.remove('show');
+                addMessage('agent', '⚠️ Le temps de préparation a expiré. Veuillez réessayer ou contactez le support.');
+                document.getElementById('userMessage').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                return;
             }
             
-            // Focus sur l'input
-            document.getElementById('userMessage').focus();
-        };
+            try {
+                const response = await fetch(`${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`);
+                const data = await response.json();
+                
+                if (data.status === 'ready' && data.question) {
+                    // Question prête !
+                    clearInterval(pollingInterval);
+                    document.getElementById('loadingMessage').classList.remove('show');
+                    
+                    // Afficher la question
+                    addMessage('agent', data.question);
+                    
+                    // Réactiver l'input
+                    document.getElementById('userMessage').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                    document.getElementById('userMessage').focus();
+                }
+                // Sinon, continuer le polling (status === 'waiting')
+                
+            } catch (error) {
+                console.error('Polling error:', error);
+                // Continuer le polling malgré l'erreur
+            }
+        }
         
         // Ajouter un message au chat
         function addMessage(type, text) {
@@ -322,7 +398,6 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
             
-            // Convertir le Markdown en HTML si c'est un message agent
             if (type === 'agent') {
                 messageDiv.innerHTML = marked.parse(text);
             } else {
@@ -330,11 +405,8 @@
             }
             
             chatBox.appendChild(messageDiv);
-            
-            // Scroll vers le bas
             chatBox.scrollTop = chatBox.scrollHeight;
             
-            // Ajouter à l'historique
             conversationHistory.push({
                 role: type === 'agent' ? 'assistant' : 'user',
                 content: text
@@ -348,22 +420,16 @@
             
             if (!message) return;
             
-            // Afficher le message utilisateur
             addMessage('user', message);
             input.value = '';
             
-            // Désactiver l'input et afficher le loader
             input.disabled = true;
             document.getElementById('sendBtn').disabled = true;
-            document.getElementById('loader').style.display = 'block';
             
             try {
-                // Envoyer au webhook
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         client_id: clientId,
                         message: message,
@@ -372,37 +438,26 @@
                 });
                 
                 const data = await response.json();
-                console.log('Response:', data);
-                
-                // Cacher le loader
-                document.getElementById('loader').style.display = 'none';
                 
                 if (data.status === 'COMPLETE' || data.status === 'complete') {
-                    // Qualification terminée
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('inputArea').style.display = 'none';
-                    
-                    addMessage('agent', '✅ Merci ! Votre qualification est complète. Nous revenons vers vous très prochainement.');
+                    addMessage('agent', '✅ Merci ! Votre qualification est complète.');
                     
                 } else if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
-                    // Afficher la prochaine question
-                    const question = data.question || data.agent_question || 'Pouvez-vous préciser votre demande ?';
+                    const question = data.question || data.agent_question || 'Pouvez-vous préciser ?';
                     addMessage('agent', question);
-                    
-                    // Réactiver l'input
                     input.disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                     input.focus();
                 } else {
-                    // Réponse inattendue
-                    addMessage('agent', data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?');
+                    addMessage('agent', data.question || data.message || 'Une erreur est survenue.');
                     input.disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                 }
                 
             } catch (error) {
                 console.error('Erreur:', error);
-                document.getElementById('loader').style.display = 'none';
                 addMessage('agent', '❌ Une erreur est survenue. Veuillez réessayer.');
                 input.disabled = false;
                 document.getElementById('sendBtn').disabled = false;
