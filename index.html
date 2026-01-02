@@ -136,227 +136,226 @@
     // Webhooks n8n
     const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
     const GET_QUESTION_URL = 'https://atefjarray.app.n8n.cloud/webhook/get-question';
-
+  
     // State
     let clientId = null;
     let conversationHistory = [];
     let pollingInterval = null;
     let pollingAttempts = 0;
     const MAX_POLLING_ATTEMPTS = 60; // 60 * 1s = 60s
-
+  
     function log(...args){ console.log(...args); }
-
+  
     function showError(msg){
       const el = document.getElementById('errorMessage');
       el.textContent = msg;
       el.classList.add('show');
     }
-
+  
     function clearError(){
       const el = document.getElementById('errorMessage');
       el.textContent = '';
       el.classList.remove('show');
     }
-
+  
     function stopPolling(){
       if (pollingInterval) clearInterval(pollingInterval);
       pollingInterval = null;
       pollingAttempts = 0;
     }
-
-    function resolveClientId() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlClientId = urlParams.get('client_id');
-      const mode = urlParams.get('mode');
-
-      // 1) Priorité ABSOLUE : URL
-      if (urlClientId && urlClientId.trim().length > 0) {
-        sessionStorage.setItem('client_id', urlClientId);
-        // localStorage seulement pour debug / reprise manuelle (pas utilisé en mode initial)
-        localStorage.setItem('last_client_id', urlClientId);
-        return { clientId: urlClientId, mode };
-      }
-
-      // 2) Fallback: sessionStorage (même session navigateur)
-      const sessionId = sessionStorage.getItem('client_id');
-      if (sessionId && sessionId.trim().length > 0) {
-        return { clientId: sessionId, mode };
-      }
-
-      // 3) Fallback: localStorage (dernière chance)
-      const lastId = localStorage.getItem('last_client_id');
-      if (lastId && lastId.trim().length > 0) {
-        return { clientId: lastId, mode };
-      }
-
-      return { clientId: null, mode };
+  
+    function getParams() {
+      const p = new URLSearchParams(window.location.search);
+      return {
+        client_id: p.get('client_id'),
+        mode: p.get('mode'),
+        question: p.get('question'),
+      };
     }
-
+  
+    function resolveClientIdStrict() {
+      const { client_id } = getParams();
+      if (!client_id || !client_id.trim()) return null;
+  
+      // Petite validation (optionnelle mais utile)
+      // Si tu veux accepter d'autres formats, enlève la ligne startsWith
+      if (!client_id.startsWith('client_')) return null;
+  
+      // Stockage uniquement miroir/debug (NE SERT PAS à choisir l'id)
+      sessionStorage.setItem('client_id_mirror', client_id);
+      localStorage.setItem('last_client_id_mirror', client_id);
+  
+      return client_id;
+    }
+  
     window.onload = function() {
       stopPolling();
       clearError();
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const initialQuestion = urlParams.get('question'); // optionnel
-      const { clientId: resolvedId, mode } = resolveClientId();
-
-      clientId = resolvedId;
-
-      log('🚀 Loaded with', { clientId, mode });
-
+  
+      const { mode, question } = getParams();
+  
+      clientId = resolveClientIdStrict();
+  
+      log('🚀 Loaded with', { clientId, mode, href: window.location.href });
+  
       document.getElementById('clientIdDisplay').textContent = clientId || '—';
-
-      // Si mode=initial, on EXIGE un client_id URL (sinon tu récupères l'ancien)
+  
+      // Cas mode=initial : on EXIGE client_id dans l'URL
       if (mode === 'initial') {
-        const urlClientId = urlParams.get('client_id');
-
-        if (!urlClientId || !urlClientId.trim()) {
-          showError("Erreur: client_id manquant dans l'URL. Vous avez été redirigé sans UUID, donc je refuse d'utiliser un ancien ID. Corrige la redirection pour inclure ?client_id=....");
-          // On laisse l'UI active pour permettre à l'utilisateur de voir l'erreur, mais on ne poll pas.
+        if (!clientId) {
+          showError("Erreur: client_id manquant ou invalide dans l'URL. Je refuse d'utiliser un ancien ID.");
           document.getElementById('userMessage').disabled = true;
           document.getElementById('sendBtn').disabled = true;
           return;
         }
-
         startPolling();
         return;
       }
-
+  
       // Si question dans URL → afficher direct
-      if (initialQuestion) {
-        addMessage('agent', decodeURIComponent(initialQuestion));
+      if (question) {
+        addMessage('agent', decodeURIComponent(question));
         document.getElementById('userMessage').focus();
         return;
       }
-
-      // Sinon message par défaut
+  
+      // Sinon message par défaut (mais toujours sans fallback d'id)
       addMessage('agent', "Bonjour ! Je suis l'Agent Qualificator. Comment puis-je vous aider aujourd'hui ?");
       document.getElementById('userMessage').focus();
     };
-
+  
     function startPolling() {
       stopPolling();
       clearError();
-
+  
       const loadingMsg = document.getElementById('loadingMessage');
       loadingMsg.classList.add('show');
-
+  
       document.getElementById('userMessage').disabled = true;
       document.getElementById('sendBtn').disabled = true;
-
-      // poll toutes les 1s (plus réactif)
+  
       pollingInterval = setInterval(checkForQuestion, 1000);
       checkForQuestion();
     }
-
+  
     async function checkForQuestion() {
       pollingAttempts++;
-
-      if (!clientId) {
+  
+      // Re-lire l'URL à CHAQUE poll (évite tout état stale)
+      const freshClientId = resolveClientIdStrict();
+      if (!freshClientId) {
         stopPolling();
         document.getElementById('loadingMessage').classList.remove('show');
-        showError("client_id introuvable. Impossible d'appeler get-question.");
+        showError("client_id introuvable/invalide dans l'URL. Impossible d'appeler get-question.");
         return;
       }
-
+      clientId = freshClientId;
+  
       const url = `${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`;
       log(`🔍 Poll ${pollingAttempts}/${MAX_POLLING_ATTEMPTS}`, url);
-
+  
       if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
         stopPolling();
         document.getElementById('loadingMessage').classList.remove('show');
-        showError("Timeout: la question n'est pas prête. Recharge la page, ou vérifie que n8n insère bien la question pour ce client_id.");
+        showError("Timeout: la question n'est pas prête. Vérifie que n8n insère bien la question pour ce client_id.");
         return;
       }
-
+  
       try {
         const response = await fetch(url, { method: 'GET' });
         const data = await response.json();
-
+  
         log('📥 Polling response:', data);
-
+  
         if (data.status === 'ready' && data.question) {
           stopPolling();
           document.getElementById('loadingMessage').classList.remove('show');
-
-          // IMPORTANT: si le backend renvoie un client_id différent, on le refuse
+  
+          // Refuser toute donnée pour un autre client_id
           if (data.client_id && data.client_id !== clientId) {
-            showError(`Mismatch client_id: front=${clientId} backend=${data.client_id}. Je n'affiche pas une question d'un autre user.`);
+            showError(`Mismatch client_id: front=${clientId} backend=${data.client_id}.`);
             return;
           }
-
+  
           addMessage('agent', data.question);
-
+  
           document.getElementById('userMessage').disabled = false;
           document.getElementById('sendBtn').disabled = false;
           document.getElementById('userMessage').focus();
           return;
         }
-
+  
         if (data.status === 'waiting') return;
-
-        // Statut inattendu
+  
         log('⚠️ Unexpected status:', data.status);
-
+  
       } catch (e) {
         log('❌ Poll error:', e);
-        // On continue à poll malgré erreurs réseau ponctuelles
+        // continue polling
       }
     }
-
+  
     function addMessage(type, text) {
       const chatBox = document.getElementById('chatBox');
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${type}`;
-
+  
       if (type === 'agent') messageDiv.innerHTML = marked.parse(text);
       else messageDiv.textContent = text;
-
+  
       chatBox.appendChild(messageDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
-
+  
       conversationHistory.push({
         role: type === 'agent' ? 'assistant' : 'user',
         content: text
       });
     }
-
+  
     async function sendMessage() {
       clearError();
-
+  
+      // Re-lire l'URL juste avant d'envoyer (évite état stale)
+      const freshClientId = resolveClientIdStrict();
+      if (!freshClientId) {
+        showError("client_id manquant/invalide dans l'URL. Je n'envoie rien.");
+        return;
+      }
+      clientId = freshClientId;
+  
       const input = document.getElementById('userMessage');
       const message = input.value.trim();
       if (!message) return;
-
+  
       addMessage('user', message);
       input.value = '';
-
+  
       input.disabled = true;
       document.getElementById('sendBtn').disabled = true;
-
+  
       try {
         const payload = {
           client_id: clientId,
           message: message,
           conversation_history: conversationHistory
         };
-
+  
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
+  
         const data = await response.json();
         log('📥 Send response:', data);
-
+  
         if (data.status === 'COMPLETE' || data.status === 'complete') {
           document.getElementById('successMessage').style.display = 'block';
           document.getElementById('inputArea').style.display = 'none';
           addMessage('agent', '✅ Merci ! Votre qualification est complète.');
           return;
         }
-
+  
         if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
           addMessage('agent', data.question || data.agent_question || 'Pouvez-vous préciser ?');
           input.disabled = false;
@@ -364,28 +363,43 @@
           input.focus();
           return;
         }
-
+  
         if (data.status === 'processing') {
-          if (data.redirect_url) {
-            window.location.href = data.redirect_url;
-            return;
+          // IMPORTANT: En mode initial, on ne redirige jamais automatiquement.
+          const { mode } = getParams();
+          if (mode !== 'initial' && data.redirect_url) {
+            // Sécurité: rediriger seulement si l'URL contient le même client_id
+            try {
+              const u = new URL(data.redirect_url);
+              const rid = u.searchParams.get('client_id');
+              if (rid === clientId) {
+                window.location.href = data.redirect_url;
+                return;
+              } else {
+                showError(`Redirect refusée: client_id différent (front=${clientId} redirect=${rid}).`);
+              }
+            } catch(_) {
+              showError("Redirect_url invalide reçue du backend.");
+            }
           }
-          addMessage('agent', 'Traitement en cours.');
+  
+          addMessage('agent', 'Traitement en cours...');
           input.disabled = false;
           document.getElementById('sendBtn').disabled = false;
+          input.focus();
           return;
         }
-
+  
         addMessage('agent', data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?');
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
-
+  
       } catch (e) {
         showError("Erreur réseau lors de l'envoi. Réessaie.");
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
       }
     }
-  </script>
+  </script>  
 </body>
 </html>
