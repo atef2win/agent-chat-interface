@@ -324,7 +324,7 @@
             } else {
                 clientId = localStorage.getItem('client_id');
                 if (!clientId) {
-                    clientId = 'web_' + Date.now();
+                    clientId = 'client_' + Date.now();
                     localStorage.setItem('client_id', clientId);
                 }
             }
