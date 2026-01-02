@@ -307,31 +307,47 @@
         
         // Initialisation
         window.onload = function() {
+            console.log('🚀 Chat interface loaded');
+            
             // Récupérer client_id et mode depuis URL
             const urlParams = new URLSearchParams(window.location.search);
-            clientId = urlParams.get('client_id') || localStorage.getItem('client_id');
+            let urlClientId = urlParams.get('client_id');
             const mode = urlParams.get('mode');
             const initialQuestion = urlParams.get('question');
             
-            if (!clientId) {
-                clientId = 'web_' + Date.now();
+            console.log('URL params:', { urlClientId, mode, initialQuestion });
+            
+            // Déterminer le client_id
+            if (urlClientId) {
+                clientId = urlClientId;
                 localStorage.setItem('client_id', clientId);
+            } else {
+                clientId = localStorage.getItem('client_id');
+                if (!clientId) {
+                    clientId = 'web_' + Date.now();
+                    localStorage.setItem('client_id', clientId);
+                }
             }
+            
+            console.log('✅ Client ID:', clientId);
             
             // Afficher le client_id
             document.getElementById('clientIdDisplay').textContent = clientId;
             
             // Si mode=initial → polling pour récupérer la première question
             if (mode === 'initial') {
+                console.log('🔄 Mode initial → Starting polling');
                 startPolling();
             }
             // Si question dans URL → afficher directement
             else if (initialQuestion) {
+                console.log('📝 Question in URL → Display directly');
                 addMessage('agent', decodeURIComponent(initialQuestion));
                 document.getElementById('userMessage').focus();
             }
             // Sinon → message de bienvenue par défaut
             else {
+                console.log('👋 Default welcome message');
                 addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
                 document.getElementById('userMessage').focus();
             }
@@ -357,22 +373,29 @@
         async function checkForQuestion() {
             pollingAttempts++;
             
+            const url = `${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`;
+            console.log(`🔍 Polling attempt ${pollingAttempts}/${MAX_POLLING_ATTEMPTS} - URL:`, url);
+            
             // Arrêter après MAX_POLLING_ATTEMPTS tentatives
             if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
+                console.error('❌ Polling timeout - Max attempts reached');
                 clearInterval(pollingInterval);
                 document.getElementById('loadingMessage').classList.remove('show');
-                addMessage('agent', '⚠️ Le temps de préparation a expiré. Veuillez réessayer ou contactez le support.');
+                addMessage('agent', '⚠️ Le temps de préparation a expiré. Veuillez rafraîchir la page ou contactez le support.');
                 document.getElementById('userMessage').disabled = false;
                 document.getElementById('sendBtn').disabled = false;
                 return;
             }
             
             try {
-                const response = await fetch(`${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`);
+                const response = await fetch(url);
                 const data = await response.json();
+                
+                console.log('📥 Polling response:', data);
                 
                 if (data.status === 'ready' && data.question) {
                     // Question prête !
+                    console.log('✅ Question ready!');
                     clearInterval(pollingInterval);
                     document.getElementById('loadingMessage').classList.remove('show');
                     
@@ -383,17 +406,23 @@
                     document.getElementById('userMessage').disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                     document.getElementById('userMessage').focus();
+                } else if (data.status === 'waiting') {
+                    console.log('⏳ Still waiting...');
+                    // Continuer le polling
+                } else {
+                    console.warn('⚠️ Unexpected response status:', data.status);
                 }
-                // Sinon, continuer le polling (status === 'waiting')
                 
             } catch (error) {
-                console.error('Polling error:', error);
+                console.error('❌ Polling error:', error);
                 // Continuer le polling malgré l'erreur
             }
         }
         
         // Ajouter un message au chat
         function addMessage(type, text) {
+            console.log(`💬 Adding message (${type}):`, text.substring(0, 100) + '...');
+            
             const chatBox = document.getElementById('chatBox');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
@@ -420,6 +449,8 @@
             
             if (!message) return;
             
+            console.log('📤 Sending message:', message);
+            
             addMessage('user', message);
             input.value = '';
             
@@ -427,37 +458,61 @@
             document.getElementById('sendBtn').disabled = true;
             
             try {
+                const payload = {
+                    client_id: clientId,
+                    message: message,
+                    conversation_history: conversationHistory
+                };
+                
+                console.log('📦 Payload:', payload);
+                
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        client_id: clientId,
-                        message: message,
-                        conversation_history: conversationHistory
-                    })
+                    body: JSON.stringify(payload)
                 });
                 
                 const data = await response.json();
+                console.log('📥 Response:', data);
                 
+                // Gérer les différents status
                 if (data.status === 'COMPLETE' || data.status === 'complete') {
+                    console.log('✅ Qualification COMPLETE');
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('inputArea').style.display = 'none';
                     addMessage('agent', '✅ Merci ! Votre qualification est complète.');
                     
                 } else if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
+                    console.log('🔄 Status INCOMPLETE - Next question');
                     const question = data.question || data.agent_question || 'Pouvez-vous préciser ?';
                     addMessage('agent', question);
                     input.disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                     input.focus();
+                    
+                } else if (data.status === 'processing') {
+                    console.log('🔄 Status PROCESSING - Redirecting');
+                    // Le workflow renvoie processing + redirect_url
+                    if (data.redirect_url) {
+                        console.log('↗️ Redirecting to:', data.redirect_url);
+                        window.location.href = data.redirect_url;
+                    } else {
+                        console.warn('⚠️ Processing without redirect_url');
+                        addMessage('agent', 'Traitement en cours...');
+                        input.disabled = false;
+                        document.getElementById('sendBtn').disabled = false;
+                    }
+                    
                 } else {
-                    addMessage('agent', data.question || data.message || 'Une erreur est survenue.');
+                    console.warn('⚠️ Unknown status:', data.status);
+                    const question = data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?';
+                    addMessage('agent', question);
                     input.disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                 }
                 
             } catch (error) {
-                console.error('Erreur:', error);
+                console.error('❌ Send error:', error);
                 addMessage('agent', '❌ Une erreur est survenue. Veuillez réessayer.');
                 input.disabled = false;
                 document.getElementById('sendBtn').disabled = false;
