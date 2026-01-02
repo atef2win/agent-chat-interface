@@ -1,527 +1,391 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qualification Agent - Chat</title>
-    
-    <!-- Bibliothèque pour rendre le Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 800px;
-            width: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        .client-id-display {
-            background: #f9f9f9;
-            padding: 10px 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .chat-box {
-            padding: 30px;
-            overflow-y: auto;
-            flex: 1;
-        }
-        
-        .message {
-            margin-bottom: 20px;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .message.agent {
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 15px;
-            border-top-left-radius: 0;
-        }
-        
-        .message.agent h1 {
-            font-size: 20px;
-            margin: 10px 0;
-            color: #667eea;
-        }
-        
-        .message.agent h2 {
-            font-size: 18px;
-            margin: 10px 0;
-            color: #764ba2;
-        }
-        
-        .message.agent h3 {
-            font-size: 16px;
-            margin: 8px 0;
-            color: #333;
-        }
-        
-        .message.agent p {
-            margin: 8px 0;
-            line-height: 1.6;
-        }
-        
-        .message.agent ul,
-        .message.agent ol {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-        
-        .message.agent li {
-            margin: 4px 0;
-        }
-        
-        .message.agent strong {
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .message.agent em {
-            font-style: italic;
-        }
-        
-        .message.agent code {
-            background: #e0e0e0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-        
-        .message.agent hr {
-            border: none;
-            border-top: 2px solid #e0e0e0;
-            margin: 15px 0;
-        }
-        
-        .message.agent a {
-            color: #667eea;
-            text-decoration: underline;
-        }
-        
-        .message.agent blockquote {
-            border-left: 4px solid #667eea;
-            padding-left: 15px;
-            margin: 10px 0;
-            color: #666;
-        }
-        
-        .message.user {
-            background: #667eea;
-            color: white;
-            padding: 15px;
-            border-radius: 15px;
-            border-top-right-radius: 0;
-            margin-left: auto;
-            max-width: 80%;
-        }
-        
-        .loading-message {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .loading-message.show {
-            display: block;
-        }
-        
-        .input-area {
-            padding: 20px 30px 30px;
-            background: #f9f9f9;
-            border-top: 1px solid #e0e0e0;
-        }
-        
-        .input-group {
-            display: flex;
-            gap: 10px;
-        }
-        
-        #userMessage {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        #userMessage:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        #sendBtn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        #sendBtn:hover {
-            transform: scale(1.05);
-        }
-        
-        #sendBtn:active {
-            transform: scale(0.95);
-        }
-        
-        #sendBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .success-message {
-            background: #4caf50;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 10px;
-            margin: 20px;
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qualification Agent - Chat</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body{
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px;
+    }
+    .container{
+      background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      max-width:800px; width:100%; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;
+    }
+    .header{
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white; padding:30px; text-align:center;
+    }
+    .header h1{ font-size:24px; margin-bottom:10px; }
+    .header p{ opacity:.9; font-size:14px; }
+
+    .client-id-display{
+      background:#f9f9f9; padding:10px 20px; text-align:center; font-size:12px;
+      color:#666; border-bottom:1px solid #e0e0e0;
+    }
+
+    .chat-box{ padding:30px; overflow-y:auto; flex:1; }
+
+    .message{ margin-bottom:20px; animation: slideIn .3s ease-out; }
+    @keyframes slideIn { from{ opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+    .message.agent{
+      background:#f0f0f0; padding:15px; border-radius:15px; border-top-left-radius:0;
+    }
+    .message.user{
+      background:#667eea; color:white; padding:15px; border-radius:15px; border-top-right-radius:0;
+      margin-left:auto; max-width:80%;
+    }
+
+    .message.agent h1 { font-size:20px; margin:10px 0; color:#667eea; }
+    .message.agent h2 { font-size:18px; margin:10px 0; color:#764ba2; }
+    .message.agent h3 { font-size:16px; margin:8px 0; color:#333; }
+    .message.agent p { margin:8px 0; line-height:1.6; }
+    .message.agent ul, .message.agent ol { margin:8px 0; padding-left:20px; }
+    .message.agent li { margin:4px 0; }
+    .message.agent strong { font-weight:bold; color:#667eea; }
+    .message.agent code { background:#e0e0e0; padding:2px 6px; border-radius:4px; font-family:monospace; }
+    .message.agent hr { border:none; border-top:2px solid #e0e0e0; margin:15px 0; }
+
+    .loading-message{
+      background:#fff3cd; border-left:4px solid #ffc107; padding:15px; border-radius:10px;
+      margin-bottom:20px; display:none;
+    }
+    .loading-message.show{ display:block; }
+
+    .error-message{
+      background:#fdecea; border-left:4px solid #f44336; padding:15px; border-radius:10px;
+      margin-bottom:20px; display:none;
+    }
+    .error-message.show{ display:block; }
+
+    .input-area{
+      padding:20px 30px 30px; background:#f9f9f9; border-top:1px solid #e0e0e0;
+    }
+    .input-group{ display:flex; gap:10px; }
+    #userMessage{
+      flex:1; padding:15px; border:2px solid #e0e0e0; border-radius:25px; font-size:16px;
+      transition:border-color .3s;
+    }
+    #userMessage:focus{ outline:none; border-color:#667eea; }
+    #sendBtn{
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white; border:none; padding:15px 30px; border-radius:25px; font-size:16px;
+      cursor:pointer; transition: transform .2s;
+    }
+    #sendBtn:hover{ transform: scale(1.05); }
+    #sendBtn:active{ transform: scale(.95); }
+    #sendBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
+    .loader{
+      border:3px solid #f3f3f3; border-top:3px solid #667eea; border-radius:50%;
+      width:20px; height:20px; animation: spin 1s linear infinite; display:inline-block; margin-left:10px;
+    }
+    @keyframes spin { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
+
+    .success-message{
+      background:#4caf50; color:white; padding:20px; text-align:center; border-radius:10px;
+      margin:20px; display:none;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Agent Qualificator</h1>
-            <p>Répondez aux questions pour compléter votre qualification</p>
-        </div>
-        
-        <div class="client-id-display">
-            Session ID: <span id="clientIdDisplay"></span>
-        </div>
-        
-        <div class="chat-box" id="chatBox">
-            <div class="loading-message" id="loadingMessage">
-                ⏳ Préparation de votre qualification en cours...
-                <span class="loader"></span>
-            </div>
-        </div>
-        
-        <div class="success-message" id="successMessage">
-            ✅ Qualification complète ! Votre demande est en cours de traitement.
-        </div>
-        
-        <div class="input-area" id="inputArea">
-            <div class="input-group">
-                <input 
-                    type="text" 
-                    id="userMessage" 
-                    placeholder="Tapez votre réponse ici..."
-                    onkeypress="if(event.key === 'Enter') sendMessage()"
-                >
-                <button id="sendBtn" onclick="sendMessage()">Envoyer</button>
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 Agent Qualificator</h1>
+      <p>Répondez aux questions pour compléter votre qualification</p>
     </div>
 
-    <script>
-        // ⚠️ IMPORTANT : URLs de vos webhooks n8n
-        const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
-        const GET_QUESTION_URL = 'https://atefjarray.app.n8n.cloud/webhook/get-question';
-        
-        // Variables globales
-        let clientId = null;
-        let conversationHistory = [];
-        let pollingInterval = null;
-        let pollingAttempts = 0;
-        const MAX_POLLING_ATTEMPTS = 30; // 30 tentatives × 2 secondes = 1 minute max
-        
-        // Initialisation
-               window.onload = function() {
-                console.log('🚀 Chat interface loaded');
-                
-                // Récupérer client_id et mode depuis URL
-                const urlParams = new URLSearchParams(window.location.search);
-                let urlClientId = urlParams.get('client_id');
-                const mode = urlParams.get('mode');
-                const tallyResponseId = urlParams.get('tally'); // Nouveau : récupérer tally responseId
-                const initialQuestion = urlParams.get('question');
-                
-                console.log('URL params:', { urlClientId, mode, tallyResponseId, initialQuestion });
-                
-                // Déterminer le client_id
-                if (urlClientId) {
-                    clientId = urlClientId;
-                } else if (tallyResponseId) {
-                    clientId = 'tally_' + tallyResponseId;
-                } else {
-                    clientId = localStorage.getItem('client_id');
-                    if (!clientId) {
-                        clientId = 'web_' + Date.now();
-                    }
-                }
-                
-                // Sauvegarder dans localStorage
-                localStorage.setItem('client_id', clientId);
-                
-                console.log('✅ Client ID:', clientId);
-                
-                // Afficher le client_id
-                document.getElementById('clientIdDisplay').textContent = clientId;
-                
-                // Si mode=initial → polling pour récupérer la première question
-                if (mode === 'initial') {
-                    console.log('🔄 Mode initial → Starting polling');
-                    startPolling();
-                }
-                // Si question dans URL → afficher directement
-                else if (initialQuestion) {
-                    console.log('📝 Question in URL → Display directly');
-                    addMessage('agent', decodeURIComponent(initialQuestion));
-                    document.getElementById('userMessage').focus();
-                }
-                // Sinon → message de bienvenue par défaut
-                else {
-                    console.log('👋 Default welcome message');
-                    addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
-                    document.getElementById('userMessage').focus();
-                }
-            };
-        
-        // Démarrer le polling
-        function startPolling() {
-            const loadingMsg = document.getElementById('loadingMessage');
-            loadingMsg.classList.add('show');
-            
-            // Désactiver l'input pendant le polling
-            document.getElementById('userMessage').disabled = true;
-            document.getElementById('sendBtn').disabled = true;
-            
-            // Polling toutes les 2 secondes
-            pollingInterval = setInterval(checkForQuestion, 2000);
-            
-            // Première vérification immédiate
-            checkForQuestion();
+    <div class="client-id-display">
+      Session ID: <span id="clientIdDisplay"></span>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+      <div class="loading-message" id="loadingMessage">
+        ⏳ Préparation de votre qualification en cours.
+        <span class="loader"></span>
+      </div>
+      <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <div class="success-message" id="successMessage">
+      ✅ Qualification complète ! Votre demande est en cours de traitement.
+    </div>
+
+    <div class="input-area" id="inputArea">
+      <div class="input-group">
+        <input
+          type="text"
+          id="userMessage"
+          placeholder="Tapez votre réponse ici."
+          onkeypress="if(event.key === 'Enter') sendMessage()"
+        />
+        <button id="sendBtn" onclick="sendMessage()">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Webhooks n8n
+    const WEBHOOK_URL = 'https://atefjarray.app.n8n.cloud/webhook/tally-form';
+    const GET_QUESTION_URL = 'https://atefjarray.app.n8n.cloud/webhook/get-question';
+
+    // State
+    let clientId = null;
+    let conversationHistory = [];
+    let pollingInterval = null;
+    let pollingAttempts = 0;
+    const MAX_POLLING_ATTEMPTS = 60; // 60 * 1s = 60s
+
+    function log(...args){ console.log(...args); }
+
+    function showError(msg){
+      const el = document.getElementById('errorMessage');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    function clearError(){
+      const el = document.getElementById('errorMessage');
+      el.textContent = '';
+      el.classList.remove('show');
+    }
+
+    function stopPolling(){
+      if (pollingInterval) clearInterval(pollingInterval);
+      pollingInterval = null;
+      pollingAttempts = 0;
+    }
+
+    function resolveClientId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlClientId = urlParams.get('client_id');
+      const mode = urlParams.get('mode');
+
+      // 1) Priorité ABSOLUE : URL
+      if (urlClientId && urlClientId.trim().length > 0) {
+        sessionStorage.setItem('client_id', urlClientId);
+        // localStorage seulement pour debug / reprise manuelle (pas utilisé en mode initial)
+        localStorage.setItem('last_client_id', urlClientId);
+        return { clientId: urlClientId, mode };
+      }
+
+      // 2) Fallback: sessionStorage (même session navigateur)
+      const sessionId = sessionStorage.getItem('client_id');
+      if (sessionId && sessionId.trim().length > 0) {
+        return { clientId: sessionId, mode };
+      }
+
+      // 3) Fallback: localStorage (dernière chance)
+      const lastId = localStorage.getItem('last_client_id');
+      if (lastId && lastId.trim().length > 0) {
+        return { clientId: lastId, mode };
+      }
+
+      return { clientId: null, mode };
+    }
+
+    window.onload = function() {
+      stopPolling();
+      clearError();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQuestion = urlParams.get('question'); // optionnel
+      const { clientId: resolvedId, mode } = resolveClientId();
+
+      clientId = resolvedId;
+
+      log('🚀 Loaded with', { clientId, mode });
+
+      document.getElementById('clientIdDisplay').textContent = clientId || '—';
+
+      // Si mode=initial, on EXIGE un client_id URL (sinon tu récupères l'ancien)
+      if (mode === 'initial') {
+        const urlClientId = urlParams.get('client_id');
+
+        if (!urlClientId || !urlClientId.trim()) {
+          showError("Erreur: client_id manquant dans l'URL. Vous avez été redirigé sans UUID, donc je refuse d'utiliser un ancien ID. Corrige la redirection pour inclure ?client_id=....");
+          // On laisse l'UI active pour permettre à l'utilisateur de voir l'erreur, mais on ne poll pas.
+          document.getElementById('userMessage').disabled = true;
+          document.getElementById('sendBtn').disabled = true;
+          return;
         }
-        
-        // Vérifier si la question est prête
-        async function checkForQuestion() {
-            pollingAttempts++;
-            
-            const url = `${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`;
-            console.log(`🔍 Polling attempt ${pollingAttempts}/${MAX_POLLING_ATTEMPTS} - URL:`, url);
-            
-            // Arrêter après MAX_POLLING_ATTEMPTS tentatives
-            if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
-                console.error('❌ Polling timeout - Max attempts reached');
-                clearInterval(pollingInterval);
-                document.getElementById('loadingMessage').classList.remove('show');
-                addMessage('agent', '⚠️ Le temps de préparation a expiré. Veuillez rafraîchir la page ou contactez le support.');
-                document.getElementById('userMessage').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-                return;
-            }
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                console.log('📥 Polling response:', data);
-                
-                if (data.status === 'ready' && data.question) {
-                    // Question prête !
-                    console.log('✅ Question ready!');
-                    clearInterval(pollingInterval);
-                    document.getElementById('loadingMessage').classList.remove('show');
-                    
-                    // Afficher la question
-                    addMessage('agent', data.question);
-                    
-                    // Réactiver l'input
-                    document.getElementById('userMessage').disabled = false;
-                    document.getElementById('sendBtn').disabled = false;
-                    document.getElementById('userMessage').focus();
-                } else if (data.status === 'waiting') {
-                    console.log('⏳ Still waiting...');
-                    // Continuer le polling
-                } else {
-                    console.warn('⚠️ Unexpected response status:', data.status);
-                }
-                
-            } catch (error) {
-                console.error('❌ Polling error:', error);
-                // Continuer le polling malgré l'erreur
-            }
+
+        startPolling();
+        return;
+      }
+
+      // Si question dans URL → afficher direct
+      if (initialQuestion) {
+        addMessage('agent', decodeURIComponent(initialQuestion));
+        document.getElementById('userMessage').focus();
+        return;
+      }
+
+      // Sinon message par défaut
+      addMessage('agent', "Bonjour ! Je suis l'Agent Qualificator. Comment puis-je vous aider aujourd'hui ?");
+      document.getElementById('userMessage').focus();
+    };
+
+    function startPolling() {
+      stopPolling();
+      clearError();
+
+      const loadingMsg = document.getElementById('loadingMessage');
+      loadingMsg.classList.add('show');
+
+      document.getElementById('userMessage').disabled = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      // poll toutes les 1s (plus réactif)
+      pollingInterval = setInterval(checkForQuestion, 1000);
+      checkForQuestion();
+    }
+
+    async function checkForQuestion() {
+      pollingAttempts++;
+
+      if (!clientId) {
+        stopPolling();
+        document.getElementById('loadingMessage').classList.remove('show');
+        showError("client_id introuvable. Impossible d'appeler get-question.");
+        return;
+      }
+
+      const url = `${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`;
+      log(`🔍 Poll ${pollingAttempts}/${MAX_POLLING_ATTEMPTS}`, url);
+
+      if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
+        stopPolling();
+        document.getElementById('loadingMessage').classList.remove('show');
+        showError("Timeout: la question n'est pas prête. Recharge la page, ou vérifie que n8n insère bien la question pour ce client_id.");
+        return;
+      }
+
+      try {
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+
+        log('📥 Polling response:', data);
+
+        if (data.status === 'ready' && data.question) {
+          stopPolling();
+          document.getElementById('loadingMessage').classList.remove('show');
+
+          // IMPORTANT: si le backend renvoie un client_id différent, on le refuse
+          if (data.client_id && data.client_id !== clientId) {
+            showError(`Mismatch client_id: front=${clientId} backend=${data.client_id}. Je n'affiche pas une question d'un autre user.`);
+            return;
+          }
+
+          addMessage('agent', data.question);
+
+          document.getElementById('userMessage').disabled = false;
+          document.getElementById('sendBtn').disabled = false;
+          document.getElementById('userMessage').focus();
+          return;
         }
-        
-        // Ajouter un message au chat
-        function addMessage(type, text) {
-            console.log(`💬 Adding message (${type}):`, text.substring(0, 100) + '...');
-            
-            const chatBox = document.getElementById('chatBox');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            
-            if (type === 'agent') {
-                messageDiv.innerHTML = marked.parse(text);
-            } else {
-                messageDiv.textContent = text;
-            }
-            
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            
-            conversationHistory.push({
-                role: type === 'agent' ? 'assistant' : 'user',
-                content: text
-            });
+
+        if (data.status === 'waiting') return;
+
+        // Statut inattendu
+        log('⚠️ Unexpected status:', data.status);
+
+      } catch (e) {
+        log('❌ Poll error:', e);
+        // On continue à poll malgré erreurs réseau ponctuelles
+      }
+    }
+
+    function addMessage(type, text) {
+      const chatBox = document.getElementById('chatBox');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type}`;
+
+      if (type === 'agent') messageDiv.innerHTML = marked.parse(text);
+      else messageDiv.textContent = text;
+
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      conversationHistory.push({
+        role: type === 'agent' ? 'assistant' : 'user',
+        content: text
+      });
+    }
+
+    async function sendMessage() {
+      clearError();
+
+      const input = document.getElementById('userMessage');
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage('user', message);
+      input.value = '';
+
+      input.disabled = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      try {
+        const payload = {
+          client_id: clientId,
+          message: message,
+          conversation_history: conversationHistory
+        };
+
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        log('📥 Send response:', data);
+
+        if (data.status === 'COMPLETE' || data.status === 'complete') {
+          document.getElementById('successMessage').style.display = 'block';
+          document.getElementById('inputArea').style.display = 'none';
+          addMessage('agent', '✅ Merci ! Votre qualification est complète.');
+          return;
         }
-        
-        // Envoyer le message
-        async function sendMessage() {
-            const input = document.getElementById('userMessage');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            console.log('📤 Sending message:', message);
-            
-            addMessage('user', message);
-            input.value = '';
-            
-            input.disabled = true;
-            document.getElementById('sendBtn').disabled = true;
-            
-            try {
-                const payload = {
-                    client_id: clientId,
-                    message: message,
-                    conversation_history: conversationHistory
-                };
-                
-                console.log('📦 Payload:', payload);
-                
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await response.json();
-                console.log('📥 Response:', data);
-                
-                // Gérer les différents status
-                if (data.status === 'COMPLETE' || data.status === 'complete') {
-                    console.log('✅ Qualification COMPLETE');
-                    document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('inputArea').style.display = 'none';
-                    addMessage('agent', '✅ Merci ! Votre qualification est complète.');
-                    
-                } else if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
-                    console.log('🔄 Status INCOMPLETE - Next question');
-                    const question = data.question || data.agent_question || 'Pouvez-vous préciser ?';
-                    addMessage('agent', question);
-                    input.disabled = false;
-                    document.getElementById('sendBtn').disabled = false;
-                    input.focus();
-                    
-                } else if (data.status === 'processing') {
-                    console.log('🔄 Status PROCESSING - Redirecting');
-                    // Le workflow renvoie processing + redirect_url
-                    if (data.redirect_url) {
-                        console.log('↗️ Redirecting to:', data.redirect_url);
-                        window.location.href = data.redirect_url;
-                    } else {
-                        console.warn('⚠️ Processing without redirect_url');
-                        addMessage('agent', 'Traitement en cours...');
-                        input.disabled = false;
-                        document.getElementById('sendBtn').disabled = false;
-                    }
-                    
-                } else {
-                    console.warn('⚠️ Unknown status:', data.status);
-                    const question = data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?';
-                    addMessage('agent', question);
-                    input.disabled = false;
-                    document.getElementById('sendBtn').disabled = false;
-                }
-                
-            } catch (error) {
-                console.error('❌ Send error:', error);
-                addMessage('agent', '❌ Une erreur est survenue. Veuillez réessayer.');
-                input.disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-            }
+
+        if (data.status === 'incomplete' || data.status === 'INCOMPLETE') {
+          addMessage('agent', data.question || data.agent_question || 'Pouvez-vous préciser ?');
+          input.disabled = false;
+          document.getElementById('sendBtn').disabled = false;
+          input.focus();
+          return;
         }
-    </script>
+
+        if (data.status === 'processing') {
+          if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+            return;
+          }
+          addMessage('agent', 'Traitement en cours.');
+          input.disabled = false;
+          document.getElementById('sendBtn').disabled = false;
+          return;
+        }
+
+        addMessage('agent', data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?');
+        input.disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+
+      } catch (e) {
+        showError("Erreur réseau lors de l'envoi. Réessaie.");
+        input.disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
+  </script>
 </body>
 </html>
