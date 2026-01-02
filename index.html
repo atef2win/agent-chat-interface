@@ -306,52 +306,56 @@
         const MAX_POLLING_ATTEMPTS = 30; // 30 tentatives × 2 secondes = 1 minute max
         
         // Initialisation
-        window.onload = function() {
-            console.log('🚀 Chat interface loaded');
-            
-            // Récupérer client_id et mode depuis URL
-            const urlParams = new URLSearchParams(window.location.search);
-            let urlClientId = urlParams.get('client_id');
-            const mode = urlParams.get('mode');
-            const initialQuestion = urlParams.get('question');
-            
-            console.log('URL params:', { urlClientId, mode, initialQuestion });
-            
-            // Déterminer le client_id
-            if (urlClientId) {
-                clientId = urlClientId;
-                localStorage.setItem('client_id', clientId);
-            } else {
-                clientId = localStorage.getItem('client_id');
-                if (!clientId) {
-                    clientId = 'client_' + Date.now();
-                    localStorage.setItem('client_id', clientId);
+               window.onload = function() {
+                console.log('🚀 Chat interface loaded');
+                
+                // Récupérer client_id et mode depuis URL
+                const urlParams = new URLSearchParams(window.location.search);
+                let urlClientId = urlParams.get('client_id');
+                const mode = urlParams.get('mode');
+                const tallyResponseId = urlParams.get('tally'); // Nouveau : récupérer tally responseId
+                const initialQuestion = urlParams.get('question');
+                
+                console.log('URL params:', { urlClientId, mode, tallyResponseId, initialQuestion });
+                
+                // Déterminer le client_id
+                if (urlClientId) {
+                    clientId = urlClientId;
+                } else if (tallyResponseId) {
+                    clientId = 'tally_' + tallyResponseId;
+                } else {
+                    clientId = localStorage.getItem('client_id');
+                    if (!clientId) {
+                        clientId = 'web_' + Date.now();
+                    }
                 }
-            }
-            
-            console.log('✅ Client ID:', clientId);
-            
-            // Afficher le client_id
-            document.getElementById('clientIdDisplay').textContent = clientId;
-            
-            // Si mode=initial → polling pour récupérer la première question
-            if (mode === 'initial') {
-                console.log('🔄 Mode initial → Starting polling');
-                startPolling();
-            }
-            // Si question dans URL → afficher directement
-            else if (initialQuestion) {
-                console.log('📝 Question in URL → Display directly');
-                addMessage('agent', decodeURIComponent(initialQuestion));
-                document.getElementById('userMessage').focus();
-            }
-            // Sinon → message de bienvenue par défaut
-            else {
-                console.log('👋 Default welcome message');
-                addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
-                document.getElementById('userMessage').focus();
-            }
-        };
+                
+                // Sauvegarder dans localStorage
+                localStorage.setItem('client_id', clientId);
+                
+                console.log('✅ Client ID:', clientId);
+                
+                // Afficher le client_id
+                document.getElementById('clientIdDisplay').textContent = clientId;
+                
+                // Si mode=initial → polling pour récupérer la première question
+                if (mode === 'initial') {
+                    console.log('🔄 Mode initial → Starting polling');
+                    startPolling();
+                }
+                // Si question dans URL → afficher directement
+                else if (initialQuestion) {
+                    console.log('📝 Question in URL → Display directly');
+                    addMessage('agent', decodeURIComponent(initialQuestion));
+                    document.getElementById('userMessage').focus();
+                }
+                // Sinon → message de bienvenue par défaut
+                else {
+                    console.log('👋 Default welcome message');
+                    addMessage('agent', 'Bonjour ! Je suis l\'Agent Qualificator. Comment puis-je vous aider aujourd\'hui ?');
+                    document.getElementById('userMessage').focus();
+                }
+            };
         
         // Démarrer le polling
         function startPolling() {
