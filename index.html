@@ -18,15 +18,16 @@
       align-items:center; 
       padding:20px;
       
-      /* Background image avec overlay */
-      background-image: url('YOUR_IMAGE_URL_HERE');
+      /* Background image from Imgur */
+      background-image: url('https://i.imgur.com/zh5hvyC.png');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
+      background-repeat: no-repeat;
       position: relative;
     }
     
-    /* Overlay sombre pour meilleure lisibilité */
+    /* Dark overlay for better readability */
     body::before {
       content: '';
       position: fixed;
@@ -34,13 +35,12 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
       z-index: 0;
     }
     
     .container{
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
+      background: white;
       border-radius:20px; 
       box-shadow:0 20px 60px rgba(0,0,0,0.3);
       max-width:800px; 
@@ -55,32 +55,67 @@
     
     .header{
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white; padding:30px; text-align:center;
+      color:white; 
+      padding:30px; 
+      text-align:center;
     }
-    .header h1{ font-size:24px; margin-bottom:10px; }
+    .header h1{ 
+      font-size:28px; 
+      margin-bottom:10px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
     .header p{ opacity:.9; font-size:14px; }
 
     .client-id-display{
-      background:#f9f9f9; padding:10px 20px; text-align:center; font-size:12px;
-      color:#666; border-bottom:1px solid #e0e0e0;
+      background:#f9f9f9; 
+      padding:10px 20px; 
+      text-align:center; 
+      font-size:12px;
+      color:#666; 
+      border-bottom:1px solid #e0e0e0;
     }
 
-    .chat-box{ padding:30px; overflow-y:auto; flex:1; }
+    .chat-box{ 
+      padding:30px; 
+      overflow-y:auto; 
+      flex:1; 
+      background: #fafafa;
+    }
 
-    .message{ margin-bottom:20px; animation: slideIn .3s ease-out; }
-    @keyframes slideIn { from{ opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+    .message{ 
+      margin-bottom:20px; 
+      animation: slideIn .3s ease-out; 
+    }
+    @keyframes slideIn { 
+      from{ opacity:0; transform:translateY(10px);} 
+      to{opacity:1; transform:translateY(0);} 
+    }
 
     .message.agent{
-      background:#f0f0f0; padding:15px; border-radius:15px; border-top-left-radius:0;
+      background:#f0f0f0; 
+      padding:15px; 
+      border-radius:15px; 
+      border-top-left-radius:0;
       max-width: 90%;
     }
     .message.user{
-      background:#667eea; color:white; padding:15px; border-radius:15px; border-top-right-radius:0;
-      margin-left:auto; max-width:80%;
+      background:#667eea; 
+      color:white; 
+      padding:15px; 
+      border-radius:15px; 
+      border-top-right-radius:0;
+      margin-left:auto; 
+      max-width:80%;
     }
     
     .message.system{
-      background:#fff3cd; border-left:4px solid #ffc107; padding:15px; border-radius:10px;
+      background:#fff3cd; 
+      border-left:4px solid #ffc107; 
+      padding:15px; 
+      border-radius:10px;
       text-align: center;
       font-style: italic;
       color: #856404;
@@ -114,6 +149,7 @@
       transition: all 0.3s;
       text-align: left;
       font-size: 15px;
+      font-weight: 500;
     }
     
     .response-button:hover {
@@ -122,15 +158,14 @@
       transform: translateX(5px);
     }
     
-    .response-button.selected {
-      background: #667eea;
-      color: white;
+    .response-button:active {
+      transform: translateX(5px) scale(0.98);
     }
     
     .checkbox-option, .radio-option {
       display: flex;
       align-items: center;
-      padding: 10px;
+      padding: 12px;
       background: white;
       border: 2px solid #e0e0e0;
       border-radius: 8px;
@@ -148,6 +183,13 @@
       width: 20px;
       height: 20px;
       cursor: pointer;
+      accent-color: #667eea;
+    }
+    
+    .checkbox-option label, .radio-option label {
+      cursor: pointer;
+      flex: 1;
+      user-select: none;
     }
     
     .checkbox-option.checked, .radio-option.checked {
@@ -163,6 +205,7 @@
       border-radius: 10px;
       cursor: pointer;
       font-size: 16px;
+      font-weight: 600;
       margin-top: 10px;
       transition: transform 0.2s;
     }
@@ -171,39 +214,65 @@
       transform: scale(1.05);
     }
     
+    .submit-selected:active {
+      transform: scale(0.98);
+    }
+    
     .submit-selected:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
 
     .loading-message{
-      background:#fff3cd; border-left:4px solid #ffc107; padding:15px; border-radius:10px;
-      margin-bottom:20px; display:none;
+      background:#fff3cd; 
+      border-left:4px solid #ffc107; 
+      padding:15px; 
+      border-radius:10px;
+      margin-bottom:20px; 
+      display:none;
     }
     .loading-message.show{ display:block; }
 
     .error-message{
-      background:#fdecea; border-left:4px solid #f44336; padding:15px; border-radius:10px;
-      margin-bottom:20px; display:none;
+      background:#fdecea; 
+      border-left:4px solid #f44336; 
+      padding:15px; 
+      border-radius:10px;
+      margin-bottom:20px; 
+      display:none;
     }
     .error-message.show{ display:block; }
 
     .input-area{
-      padding:20px 30px 30px; background:rgba(249, 249, 249, 0.95); border-top:1px solid #e0e0e0;
+      padding:20px 30px 30px; 
+      background:white; 
+      border-top:1px solid #e0e0e0;
     }
-    .input-group{ display:flex; gap:10px; align-items: center; }
+    .input-group{ 
+      display:flex; 
+      gap:10px; 
+      align-items: center; 
+    }
     
     #userMessage{
-      flex:1; padding:15px; border:2px solid #e0e0e0; border-radius:25px; font-size:16px;
-      transition:border-color .3s; background: white;
+      flex:1; 
+      padding:15px 20px; 
+      border:2px solid #e0e0e0; 
+      border-radius:25px; 
+      font-size:16px;
+      transition:border-color .3s; 
+      background: white;
     }
-    #userMessage:focus{ outline:none; border-color:#667eea; }
+    #userMessage:focus{ 
+      outline:none; 
+      border-color:#667eea; 
+    }
     
     #voiceBtn {
       background: white;
       border: 2px solid #667eea;
       color: #667eea;
-      padding: 15px;
+      padding: 0;
       border-radius: 50%;
       cursor: pointer;
       transition: all 0.3s;
@@ -212,12 +281,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 24px;
+      flex-shrink: 0;
     }
     
     #voiceBtn:hover {
       background: #667eea;
       color: white;
+      transform: scale(1.05);
     }
     
     #voiceBtn.recording {
@@ -228,28 +299,51 @@
     }
     
     @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
     }
     
     #sendBtn{
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white; border:none; padding:15px 30px; border-radius:25px; font-size:16px;
-      cursor:pointer; transition: transform .2s;
+      color:white; 
+      border:none; 
+      padding:15px 30px; 
+      border-radius:25px; 
+      font-size:16px;
+      font-weight: 600;
+      cursor:pointer; 
+      transition: transform .2s;
+      flex-shrink: 0;
     }
     #sendBtn:hover{ transform: scale(1.05); }
     #sendBtn:active{ transform: scale(.95); }
     #sendBtn:disabled{ opacity:.6; cursor:not-allowed; }
 
     .loader{
-      border:3px solid #f3f3f3; border-top:3px solid #667eea; border-radius:50%;
-      width:20px; height:20px; animation: spin 1s linear infinite; display:inline-block; margin-left:10px;
+      border:3px solid #f3f3f3; 
+      border-top:3px solid #667eea; 
+      border-radius:50%;
+      width:20px; 
+      height:20px; 
+      animation: spin 1s linear infinite; 
+      display:inline-block; 
+      margin-left:10px;
     }
-    @keyframes spin { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
+    @keyframes spin { 
+      0% {transform:rotate(0deg);} 
+      100% {transform:rotate(360deg);} 
+    }
 
     .success-message{
-      background:#4caf50; color:white; padding:20px; text-align:center; border-radius:10px;
-      margin:20px; display:none;
+      background:#4caf50; 
+      color:white; 
+      padding:20px; 
+      text-align:center; 
+      border-radius:10px;
+      margin:20px; 
+      display:none;
+      font-size: 18px;
+      font-weight: 600;
     }
     
     .voice-indicator {
@@ -261,10 +355,19 @@
       margin-bottom: 10px;
       text-align: center;
       animation: pulse 1s infinite;
+      font-weight: 600;
     }
     
     .voice-indicator.show {
       display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container { max-width: 100%; margin: 10px; }
+      .header h1 { font-size: 22px; }
+      .input-group { flex-wrap: wrap; }
+      #userMessage { min-width: 100%; }
     }
   </style>
 </head>
@@ -272,7 +375,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>🤖 Agent Qualificator</h1>
+      <h1><span>🤖</span> Agent Qualificator</h1>
       <p>Répondez aux questions pour compléter votre qualification</p>
     </div>
 
@@ -329,6 +432,8 @@
     
     // Initialize speech recognition
     function initVoiceRecognition() {
+      console.log('🎤 Initializing voice recognition...');
+      
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
@@ -336,28 +441,40 @@
         recognition.continuous = false;
         recognition.interimResults = false;
         
+        recognition.onstart = function() {
+          console.log('🎤 Voice recognition started');
+        };
+        
         recognition.onresult = function(event) {
           const transcript = event.results[0][0].transcript;
+          console.log('🎤 Transcript:', transcript);
           document.getElementById('userMessage').value = transcript;
           stopVoiceRecording();
         };
         
         recognition.onerror = function(event) {
-          console.error('Speech recognition error:', event.error);
+          console.error('🎤 Speech recognition error:', event.error);
           stopVoiceRecording();
-          showError('Erreur de reconnaissance vocale. Veuillez réessayer.');
+          if (event.error !== 'no-speech') {
+            showError('Erreur de reconnaissance vocale. Veuillez réessayer.');
+          }
         };
         
         recognition.onend = function() {
+          console.log('🎤 Voice recognition ended');
           stopVoiceRecording();
         };
+        
+        console.log('✅ Voice recognition initialized successfully');
       } else {
-        console.warn('Speech recognition not supported');
+        console.warn('❌ Speech recognition not supported in this browser');
         document.getElementById('voiceBtn').style.display = 'none';
       }
     }
     
     function toggleVoiceInput() {
+      console.log('🎤 Toggle voice input, currently recording:', isRecording);
+      
       if (isRecording) {
         stopVoiceRecording();
       } else {
@@ -371,6 +488,7 @@
         return;
       }
       
+      console.log('🎤 Starting voice recording...');
       isRecording = true;
       document.getElementById('voiceBtn').classList.add('recording');
       document.getElementById('voiceIndicator').classList.add('show');
@@ -379,12 +497,13 @@
       try {
         recognition.start();
       } catch (e) {
-        console.error('Error starting recognition:', e);
+        console.error('🎤 Error starting recognition:', e);
         stopVoiceRecording();
       }
     }
     
     function stopVoiceRecording() {
+      console.log('🎤 Stopping voice recording...');
       isRecording = false;
       document.getElementById('voiceBtn').classList.remove('recording');
       document.getElementById('voiceIndicator').classList.remove('show');
@@ -393,7 +512,7 @@
         try {
           recognition.stop();
         } catch (e) {
-          // Already stopped
+          console.log('🎤 Recognition already stopped');
         }
       }
     }
@@ -404,6 +523,7 @@
       const el = document.getElementById('errorMessage');
       el.textContent = msg;
       el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 5000);
     }
   
     function clearError(){
@@ -439,6 +559,7 @@
     }
   
     window.onload = function() {
+      console.log('🚀 Application loading...');
       initVoiceRecognition();
       stopPolling();
       clearError();
@@ -536,10 +657,7 @@
     }
   
     function parseInteractiveOptions(text) {
-      // Detect multiple choice questions with options like:
-      // - Option 1
-      // - Option 2
-      // OR numbered lists 1. 2. 3.
+      console.log('🔍 Parsing text for interactive options:', text.substring(0, 100) + '...');
       
       const lines = text.split('\n');
       const options = [];
@@ -549,17 +667,16 @@
       for (let line of lines) {
         const trimmed = line.trim();
         
-        // Detect option patterns
-        if (trimmed.match(/^[-*•]\s+/) || trimmed.match(/^\d+[.)]\s+/) || trimmed.match(/^\[\s*\]\s+/)) {
+        // Detect option patterns: -, *, •, 1., 2., [ ]
+        const optionMatch = trimmed.match(/^([-*•]|\d+[.)]|\[\s*\])\s+(.+)$/);
+        
+        if (optionMatch) {
           inOptions = true;
-          let optionText = trimmed
-            .replace(/^[-*•]\s+/, '')
-            .replace(/^\d+[.)]\s+/, '')
-            .replace(/^\[\s*\]\s+/, '')
-            .trim();
+          const optionText = optionMatch[2].trim();
           
           if (optionText && optionText.length > 0) {
             options.push(optionText);
+            console.log('  ✅ Found option:', optionText);
           }
         } else if (trimmed.length > 0) {
           if (!inOptions) {
@@ -568,6 +685,7 @@
         }
       }
       
+      console.log(`🔍 Parsing result: ${options.length} options found`);
       return { questionText: questionText || text, options };
     }
   
@@ -584,13 +702,18 @@
         
         // Add interactive options if detected
         if (options.length > 0 && options.length <= 10) {
+          console.log('✅ Creating interactive UI for', options.length, 'options');
+          
           const optionsContainer = document.createElement('div');
           optionsContainer.className = 'response-options';
           
           // Determine if single or multiple choice
           const isMultiple = questionText.toLowerCase().includes('sélectionn') || 
                            questionText.toLowerCase().includes('plusieurs') ||
+                           questionText.toLowerCase().includes('cochez') ||
                            questionText.toLowerCase().includes('tous');
+          
+          console.log('  Multiple choice detected:', isMultiple);
           
           if (isMultiple) {
             // Checkboxes for multiple choice
@@ -598,16 +721,20 @@
               const optionDiv = document.createElement('div');
               optionDiv.className = 'checkbox-option';
               optionDiv.innerHTML = `
-                <input type="checkbox" id="option_${index}" value="${option}">
-                <label for="option_${index}" style="cursor: pointer; flex: 1;">${option}</label>
+                <input type="checkbox" id="option_${index}" value="${option.replace(/"/g, '&quot;')}">
+                <label for="option_${index}">${option}</label>
               `;
               
               optionDiv.onclick = function(e) {
-                if (e.target.tagName !== 'INPUT') {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
                   const checkbox = optionDiv.querySelector('input');
                   checkbox.checked = !checkbox.checked;
+                  optionDiv.classList.toggle('checked', checkbox.checked);
                 }
-                optionDiv.classList.toggle('checked', optionDiv.querySelector('input').checked);
+              };
+              
+              optionDiv.querySelector('input').onchange = function() {
+                optionDiv.classList.toggle('checked', this.checked);
               };
               
               optionsContainer.appendChild(optionDiv);
@@ -626,6 +753,8 @@
               if (selected.length > 0) {
                 document.getElementById('userMessage').value = selected.join(', ');
                 sendMessage();
+              } else {
+                showError('Veuillez sélectionner au moins une option');
               }
             };
             optionsContainer.appendChild(submitBtn);
@@ -658,7 +787,7 @@
       if (type !== 'system') {
         conversationHistory.push({
           role: type === 'agent' ? 'assistant' : 'user',
-          content: text
+          content: type === 'agent' ? text : text
         });
       }
     }
@@ -754,7 +883,8 @@
         document.getElementById('voiceBtn').disabled = false;
   
       } catch (e) {
-        showError("Erreur réseau. Réessaie.");
+        console.error('❌ Send error:', e);
+        showError("Erreur réseau. Réessayez.");
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
         document.getElementById('voiceBtn').disabled = false;
