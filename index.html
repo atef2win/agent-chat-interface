@@ -3,122 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Qualification Agent - Chat Enhanced</title>
+  <title>Qualification Agent - Chat</title>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    
     body{
       font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height:100vh; 
-      display:flex; 
-      justify-content:center; 
-      align-items:center; 
-      padding:20px;
-      
-      /* Background image from Imgur */
-      background-image: url('https://res.cloudinary.com/ddjovu7kn/image/upload/v1768229348/gemini-2.5-flash-image_best_quality_ever_on_this_image_with_a_purple_violet_background_keeping_the_orig-0_a33pb8.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
-      position: relative;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px;
     }
-    
-    /* Dark overlay for better readability */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      z-index: 0;
-    }
-    
     .container{
-      background: white;
-      border-radius:20px; 
-      box-shadow:0 20px 60px rgba(0,0,0,0.3);
-      max-width:800px; 
-      width:100%; 
-      overflow:hidden; 
-      display:flex; 
-      flex-direction:column; 
-      max-height:90vh;
-      position: relative;
-      z-index: 1;
+      background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      max-width:800px; width:100%; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;
     }
-    
     .header{
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white; 
-      padding:30px; 
-      text-align:center;
+      color:white; padding:30px; text-align:center;
     }
-    .header h1{ 
-      font-size:28px; 
-      margin-bottom:10px; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
+    .header h1{ font-size:24px; margin-bottom:10px; }
     .header p{ opacity:.9; font-size:14px; }
 
     .client-id-display{
-      background:#f9f9f9; 
-      padding:10px 20px; 
-      text-align:center; 
-      font-size:12px;
-      color:#666; 
-      border-bottom:1px solid #e0e0e0;
+      background:#f9f9f9; padding:10px 20px; text-align:center; font-size:12px;
+      color:#666; border-bottom:1px solid #e0e0e0;
     }
 
-    .chat-box{ 
-      padding:30px; 
-      overflow-y:auto; 
-      flex:1; 
-      background: #fafafa;
-    }
+    .chat-box{ padding:30px; overflow-y:auto; flex:1; }
 
-    .message{ 
-      margin-bottom:20px; 
-      animation: slideIn .3s ease-out; 
-    }
-    @keyframes slideIn { 
-      from{ opacity:0; transform:translateY(10px);} 
-      to{opacity:1; transform:translateY(0);} 
-    }
+    .message{ margin-bottom:20px; animation: slideIn .3s ease-out; }
+    @keyframes slideIn { from{ opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
 
     .message.agent{
-      background:#f0f0f0; 
-      padding:15px; 
-      border-radius:15px; 
-      border-top-left-radius:0;
-      max-width: 90%;
+      background:#f0f0f0; padding:15px; border-radius:15px; border-top-left-radius:0;
     }
     .message.user{
-      background:#667eea; 
-      color:white; 
-      padding:15px; 
-      border-radius:15px; 
-      border-top-right-radius:0;
-      margin-left:auto; 
-      max-width:80%;
-    }
-    
-    .message.system{
-      background:#fff3cd; 
-      border-left:4px solid #ffc107; 
-      padding:15px; 
-      border-radius:10px;
-      text-align: center;
-      font-style: italic;
-      color: #856404;
+      background:#667eea; color:white; padding:15px; border-radius:15px; border-top-right-radius:0;
+      margin-left:auto; max-width:80%;
     }
 
     .message.agent h1 { font-size:20px; margin:10px 0; color:#667eea; }
@@ -131,243 +53,45 @@
     .message.agent code { background:#e0e0e0; padding:2px 6px; border-radius:4px; font-family:monospace; }
     .message.agent hr { border:none; border-top:2px solid #e0e0e0; margin:15px 0; }
 
-    /* Interactive response options */
-    .response-options {
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    .response-button {
-      background: white;
-      border: 2px solid #667eea;
-      color: #667eea;
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-align: left;
-      font-size: 15px;
-      font-weight: 500;
-    }
-    
-    .response-button:hover {
-      background: #667eea;
-      color: white;
-      transform: translateX(5px);
-    }
-    
-    .response-button:active {
-      transform: translateX(5px) scale(0.98);
-    }
-    
-    .checkbox-option, .radio-option {
-      display: flex;
-      align-items: center;
-      padding: 12px;
-      background: white;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .checkbox-option:hover, .radio-option:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-    }
-    
-    .checkbox-option input, .radio-option input {
-      margin-right: 10px;
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      accent-color: #667eea;
-    }
-    
-    .checkbox-option label, .radio-option label {
-      cursor: pointer;
-      flex: 1;
-      user-select: none;
-    }
-    
-    .checkbox-option.checked, .radio-option.checked {
-      border-color: #667eea;
-      background: #f0f4ff;
-    }
-    
-    .submit-selected {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 600;
-      margin-top: 10px;
-      transition: transform 0.2s;
-    }
-    
-    .submit-selected:hover {
-      transform: scale(1.05);
-    }
-    
-    .submit-selected:active {
-      transform: scale(0.98);
-    }
-    
-    .submit-selected:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
     .loading-message{
-      background:#fff3cd; 
-      border-left:4px solid #ffc107; 
-      padding:15px; 
-      border-radius:10px;
-      margin-bottom:20px; 
-      display:none;
+      background:#fff3cd; border-left:4px solid #ffc107; padding:15px; border-radius:10px;
+      margin-bottom:20px; display:none;
     }
     .loading-message.show{ display:block; }
 
     .error-message{
-      background:#fdecea; 
-      border-left:4px solid #f44336; 
-      padding:15px; 
-      border-radius:10px;
-      margin-bottom:20px; 
-      display:none;
+      background:#fdecea; border-left:4px solid #f44336; padding:15px; border-radius:10px;
+      margin-bottom:20px; display:none;
     }
     .error-message.show{ display:block; }
 
     .input-area{
-      padding:20px 30px 30px; 
-      background:white; 
-      border-top:1px solid #e0e0e0;
+      padding:20px 30px 30px; background:#f9f9f9; border-top:1px solid #e0e0e0;
     }
-    .input-group{ 
-      display:flex; 
-      gap:10px; 
-      align-items: center; 
-    }
-    
+    .input-group{ display:flex; gap:10px; }
     #userMessage{
-      flex:1; 
-      padding:15px 20px; 
-      border:2px solid #e0e0e0; 
-      border-radius:25px; 
-      font-size:16px;
-      transition:border-color .3s; 
-      background: white;
+      flex:1; padding:15px; border:2px solid #e0e0e0; border-radius:25px; font-size:16px;
+      transition:border-color .3s;
     }
-    #userMessage:focus{ 
-      outline:none; 
-      border-color:#667eea; 
-    }
-    
-    #voiceBtn {
-      background: white;
-      border: 2px solid #667eea;
-      color: #667eea;
-      padding: 0;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: all 0.3s;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      flex-shrink: 0;
-    }
-    
-    #voiceBtn:hover {
-      background: #667eea;
-      color: white;
-      transform: scale(1.05);
-    }
-    
-    #voiceBtn.recording {
-      background: #f44336;
-      border-color: #f44336;
-      color: white;
-      animation: pulse 1s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-    }
-    
+    #userMessage:focus{ outline:none; border-color:#667eea; }
     #sendBtn{
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white; 
-      border:none; 
-      padding:15px 30px; 
-      border-radius:25px; 
-      font-size:16px;
-      font-weight: 600;
-      cursor:pointer; 
-      transition: transform .2s;
-      flex-shrink: 0;
+      color:white; border:none; padding:15px 30px; border-radius:25px; font-size:16px;
+      cursor:pointer; transition: transform .2s;
     }
     #sendBtn:hover{ transform: scale(1.05); }
     #sendBtn:active{ transform: scale(.95); }
     #sendBtn:disabled{ opacity:.6; cursor:not-allowed; }
 
     .loader{
-      border:3px solid #f3f3f3; 
-      border-top:3px solid #667eea; 
-      border-radius:50%;
-      width:20px; 
-      height:20px; 
-      animation: spin 1s linear infinite; 
-      display:inline-block; 
-      margin-left:10px;
+      border:3px solid #f3f3f3; border-top:3px solid #667eea; border-radius:50%;
+      width:20px; height:20px; animation: spin 1s linear infinite; display:inline-block; margin-left:10px;
     }
-    @keyframes spin { 
-      0% {transform:rotate(0deg);} 
-      100% {transform:rotate(360deg);} 
-    }
+    @keyframes spin { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
 
     .success-message{
-      background:#4caf50; 
-      color:white; 
-      padding:20px; 
-      text-align:center; 
-      border-radius:10px;
-      margin:20px; 
-      display:none;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .voice-indicator {
-      display: none;
-      background: #f44336;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      margin-bottom: 10px;
-      text-align: center;
-      animation: pulse 1s infinite;
-      font-weight: 600;
-    }
-    
-    .voice-indicator.show {
-      display: block;
-    }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-      .container { max-width: 100%; margin: 10px; }
-      .header h1 { font-size: 22px; }
-      .input-group { flex-wrap: wrap; }
-      #userMessage { min-width: 100%; }
+      background:#4caf50; color:white; padding:20px; text-align:center; border-radius:10px;
+      margin:20px; display:none;
     }
   </style>
 </head>
@@ -375,7 +99,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1><span>🤖</span> Agent Qualificator</h1>
+      <h1>🤖 Agent Qualificator</h1>
       <p>Répondez aux questions pour compléter votre qualification</p>
     </div>
 
@@ -396,17 +120,11 @@
     </div>
 
     <div class="input-area" id="inputArea">
-      <div class="voice-indicator" id="voiceIndicator">
-        🎤 Enregistrement en cours...
-      </div>
       <div class="input-group">
-        <button id="voiceBtn" onclick="toggleVoiceInput()" title="Commande vocale">
-          🎤
-        </button>
         <input
           type="text"
           id="userMessage"
-          placeholder="Tapez votre réponse ou utilisez la commande vocale..."
+          placeholder="Tapez votre réponse ici."
           onkeypress="if(event.key === 'Enter') sendMessage()"
         />
         <button id="sendBtn" onclick="sendMessage()">Envoyer</button>
@@ -424,98 +142,7 @@
     let conversationHistory = [];
     let pollingInterval = null;
     let pollingAttempts = 0;
-    const MAX_POLLING_ATTEMPTS = 60;
-    
-    // Voice recognition
-    let recognition = null;
-    let isRecording = false;
-    
-    // Initialize speech recognition
-    function initVoiceRecognition() {
-      console.log('🎤 Initializing voice recognition...');
-      
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.lang = 'fr-FR';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        
-        recognition.onstart = function() {
-          console.log('🎤 Voice recognition started');
-        };
-        
-        recognition.onresult = function(event) {
-          const transcript = event.results[0][0].transcript;
-          console.log('🎤 Transcript:', transcript);
-          document.getElementById('userMessage').value = transcript;
-          stopVoiceRecording();
-        };
-        
-        recognition.onerror = function(event) {
-          console.error('🎤 Speech recognition error:', event.error);
-          stopVoiceRecording();
-          if (event.error !== 'no-speech') {
-            showError('Erreur de reconnaissance vocale. Veuillez réessayer.');
-          }
-        };
-        
-        recognition.onend = function() {
-          console.log('🎤 Voice recognition ended');
-          stopVoiceRecording();
-        };
-        
-        console.log('✅ Voice recognition initialized successfully');
-      } else {
-        console.warn('❌ Speech recognition not supported in this browser');
-        document.getElementById('voiceBtn').style.display = 'none';
-      }
-    }
-    
-    function toggleVoiceInput() {
-      console.log('🎤 Toggle voice input, currently recording:', isRecording);
-      
-      if (isRecording) {
-        stopVoiceRecording();
-      } else {
-        startVoiceRecording();
-      }
-    }
-    
-    function startVoiceRecording() {
-      if (!recognition) {
-        showError('La reconnaissance vocale n\'est pas supportée par votre navigateur.');
-        return;
-      }
-      
-      console.log('🎤 Starting voice recording...');
-      isRecording = true;
-      document.getElementById('voiceBtn').classList.add('recording');
-      document.getElementById('voiceIndicator').classList.add('show');
-      document.getElementById('userMessage').value = '';
-      
-      try {
-        recognition.start();
-      } catch (e) {
-        console.error('🎤 Error starting recognition:', e);
-        stopVoiceRecording();
-      }
-    }
-    
-    function stopVoiceRecording() {
-      console.log('🎤 Stopping voice recording...');
-      isRecording = false;
-      document.getElementById('voiceBtn').classList.remove('recording');
-      document.getElementById('voiceIndicator').classList.remove('show');
-      
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch (e) {
-          console.log('🎤 Recognition already stopped');
-        }
-      }
-    }
+    const MAX_POLLING_ATTEMPTS = 60; // 60 * 1s = 60s
   
     function log(...args){ console.log(...args); }
   
@@ -523,7 +150,6 @@
       const el = document.getElementById('errorMessage');
       el.textContent = msg;
       el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 5000);
     }
   
     function clearError(){
@@ -550,44 +176,50 @@
     function resolveClientIdStrict() {
       const { client_id } = getParams();
       if (!client_id || !client_id.trim()) return null;
+  
+      // Petite validation (optionnelle mais utile)
+      // Si tu veux accepter d'autres formats, enlève la ligne startsWith
       if (!client_id.startsWith('client_')) return null;
-      
+  
+      // Stockage uniquement miroir/debug (NE SERT PAS à choisir l'id)
       sessionStorage.setItem('client_id_mirror', client_id);
       localStorage.setItem('last_client_id_mirror', client_id);
-      
+  
       return client_id;
     }
   
     window.onload = function() {
-      console.log('🚀 Application loading...');
-      initVoiceRecognition();
       stopPolling();
       clearError();
   
       const { mode, question } = getParams();
+  
       clientId = resolveClientIdStrict();
   
       log('🚀 Loaded with', { clientId, mode, href: window.location.href });
+  
       document.getElementById('clientIdDisplay').textContent = clientId || '—';
   
+      // Cas mode=initial : on EXIGE client_id dans l'URL
       if (mode === 'initial') {
         if (!clientId) {
-          showError("Erreur: client_id manquant ou invalide dans l'URL.");
+          showError("Erreur: client_id manquant ou invalide dans l'URL. Je refuse d'utiliser un ancien ID.");
           document.getElementById('userMessage').disabled = true;
           document.getElementById('sendBtn').disabled = true;
-          document.getElementById('voiceBtn').disabled = true;
           return;
         }
         startPolling();
         return;
       }
   
+      // Si question dans URL → afficher direct
       if (question) {
         addMessage('agent', decodeURIComponent(question));
         document.getElementById('userMessage').focus();
         return;
       }
   
+      // Sinon message par défaut (mais toujours sans fallback d'id)
       addMessage('agent', "Bonjour ! Je suis l'Agent Qualificator. Comment puis-je vous aider aujourd'hui ?");
       document.getElementById('userMessage').focus();
     };
@@ -601,7 +233,6 @@
   
       document.getElementById('userMessage').disabled = true;
       document.getElementById('sendBtn').disabled = true;
-      document.getElementById('voiceBtn').disabled = true;
   
       pollingInterval = setInterval(checkForQuestion, 1000);
       checkForQuestion();
@@ -609,37 +240,40 @@
   
     async function checkForQuestion() {
       pollingAttempts++;
+  
+      // Re-lire l'URL à CHAQUE poll (évite tout état stale)
       const freshClientId = resolveClientIdStrict();
-      
       if (!freshClientId) {
         stopPolling();
         document.getElementById('loadingMessage').classList.remove('show');
-        showError("client_id introuvable dans l'URL.");
+        showError("client_id introuvable/invalide dans l'URL. Impossible d'appeler get-question.");
         return;
       }
-      
       clientId = freshClientId;
+  
       const url = `${GET_QUESTION_URL}?client_id=${encodeURIComponent(clientId)}`;
       log(`🔍 Poll ${pollingAttempts}/${MAX_POLLING_ATTEMPTS}`, url);
   
       if (pollingAttempts > MAX_POLLING_ATTEMPTS) {
         stopPolling();
         document.getElementById('loadingMessage').classList.remove('show');
-        showError("Timeout: la question n'est pas prête.");
+        showError("Timeout: la question n'est pas prête. Vérifie que n8n insère bien la question pour ce client_id.");
         return;
       }
   
       try {
         const response = await fetch(url, { method: 'GET' });
         const data = await response.json();
+  
         log('📥 Polling response:', data);
   
         if (data.status === 'ready' && data.question) {
           stopPolling();
           document.getElementById('loadingMessage').classList.remove('show');
   
+          // Refuser toute donnée pour un autre client_id
           if (data.client_id && data.client_id !== clientId) {
-            showError(`Mismatch client_id.`);
+            showError(`Mismatch client_id: front=${clientId} backend=${data.client_id}.`);
             return;
           }
   
@@ -647,46 +281,18 @@
   
           document.getElementById('userMessage').disabled = false;
           document.getElementById('sendBtn').disabled = false;
-          document.getElementById('voiceBtn').disabled = false;
           document.getElementById('userMessage').focus();
           return;
         }
+  
+        if (data.status === 'waiting') return;
+  
+        log('⚠️ Unexpected status:', data.status);
+  
       } catch (e) {
         log('❌ Poll error:', e);
+        // continue polling
       }
-    }
-  
-    function parseInteractiveOptions(text) {
-      console.log('🔍 Parsing text for interactive options:', text.substring(0, 100) + '...');
-      
-      const lines = text.split('\n');
-      const options = [];
-      let questionText = '';
-      let inOptions = false;
-      
-      for (let line of lines) {
-        const trimmed = line.trim();
-        
-        // Detect option patterns: -, *, •, 1., 2., [ ]
-        const optionMatch = trimmed.match(/^([-*•]|\d+[.)]|\[\s*\])\s+(.+)$/);
-        
-        if (optionMatch) {
-          inOptions = true;
-          const optionText = optionMatch[2].trim();
-          
-          if (optionText && optionText.length > 0) {
-            options.push(optionText);
-            console.log('  ✅ Found option:', optionText);
-          }
-        } else if (trimmed.length > 0) {
-          if (!inOptions) {
-            questionText += (questionText ? '\n' : '') + trimmed;
-          }
-        }
-      }
-      
-      console.log(`🔍 Parsing result: ${options.length} options found`);
-      return { questionText: questionText || text, options };
     }
   
     function addMessage(type, text) {
@@ -694,110 +300,25 @@
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${type}`;
   
-      if (type === 'agent') {
-        const { questionText, options } = parseInteractiveOptions(text);
-        
-        // Render markdown
-        messageDiv.innerHTML = marked.parse(questionText);
-        
-        // Add interactive options if detected
-        if (options.length > 0 && options.length <= 10) {
-          console.log('✅ Creating interactive UI for', options.length, 'options');
-          
-          const optionsContainer = document.createElement('div');
-          optionsContainer.className = 'response-options';
-          
-          // Determine if single or multiple choice
-          const isMultiple = questionText.toLowerCase().includes('sélectionn') || 
-                           questionText.toLowerCase().includes('plusieurs') ||
-                           questionText.toLowerCase().includes('cochez') ||
-                           questionText.toLowerCase().includes('tous');
-          
-          console.log('  Multiple choice detected:', isMultiple);
-          
-          if (isMultiple) {
-            // Checkboxes for multiple choice
-            options.forEach((option, index) => {
-              const optionDiv = document.createElement('div');
-              optionDiv.className = 'checkbox-option';
-              optionDiv.innerHTML = `
-                <input type="checkbox" id="option_${index}" value="${option.replace(/"/g, '&quot;')}">
-                <label for="option_${index}">${option}</label>
-              `;
-              
-              optionDiv.onclick = function(e) {
-                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
-                  const checkbox = optionDiv.querySelector('input');
-                  checkbox.checked = !checkbox.checked;
-                  optionDiv.classList.toggle('checked', checkbox.checked);
-                }
-              };
-              
-              optionDiv.querySelector('input').onchange = function() {
-                optionDiv.classList.toggle('checked', this.checked);
-              };
-              
-              optionsContainer.appendChild(optionDiv);
-            });
-            
-            // Submit button
-            const submitBtn = document.createElement('button');
-            submitBtn.className = 'submit-selected';
-            submitBtn.textContent = 'Valider ma sélection';
-            submitBtn.onclick = function() {
-              const selected = [];
-              document.querySelectorAll('.checkbox-option input:checked').forEach(cb => {
-                selected.push(cb.value);
-              });
-              
-              if (selected.length > 0) {
-                document.getElementById('userMessage').value = selected.join(', ');
-                sendMessage();
-              } else {
-                showError('Veuillez sélectionner au moins une option');
-              }
-            };
-            optionsContainer.appendChild(submitBtn);
-            
-          } else {
-            // Single choice buttons
-            options.forEach(option => {
-              const button = document.createElement('button');
-              button.className = 'response-button';
-              button.textContent = option;
-              button.onclick = function() {
-                document.getElementById('userMessage').value = option;
-                sendMessage();
-              };
-              optionsContainer.appendChild(button);
-            });
-          }
-          
-          messageDiv.appendChild(optionsContainer);
-        }
-      } else if (type === 'system') {
-        messageDiv.textContent = text;
-      } else {
-        messageDiv.textContent = text;
-      }
+      if (type === 'agent') messageDiv.innerHTML = marked.parse(text);
+      else messageDiv.textContent = text;
   
       chatBox.appendChild(messageDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
   
-      if (type !== 'system') {
-        conversationHistory.push({
-          role: type === 'agent' ? 'assistant' : 'user',
-          content: type === 'agent' ? text : text
-        });
-      }
+      conversationHistory.push({
+        role: type === 'agent' ? 'assistant' : 'user',
+        content: text
+      });
     }
   
     async function sendMessage() {
       clearError();
-      
+  
+      // Re-lire l'URL juste avant d'envoyer (évite état stale)
       const freshClientId = resolveClientIdStrict();
       if (!freshClientId) {
-        showError("client_id manquant dans l'URL.");
+        showError("client_id manquant/invalide dans l'URL. Je n'envoie rien.");
         return;
       }
       clientId = freshClientId;
@@ -811,10 +332,6 @@
   
       input.disabled = true;
       document.getElementById('sendBtn').disabled = true;
-      document.getElementById('voiceBtn').disabled = true;
-      
-      // Show loading indicator
-      addMessage('system', '⏳ Analyse en cours...');
   
       try {
         const payload = {
@@ -831,10 +348,6 @@
   
         const data = await response.json();
         log('📥 Send response:', data);
-        
-        // Remove loading indicator
-        const systemMessages = document.querySelectorAll('.message.system');
-        systemMessages.forEach(msg => msg.remove());
   
         if (data.status === 'COMPLETE' || data.status === 'complete') {
           document.getElementById('successMessage').style.display = 'block';
@@ -847,14 +360,15 @@
           addMessage('agent', data.question || data.agent_question || 'Pouvez-vous préciser ?');
           input.disabled = false;
           document.getElementById('sendBtn').disabled = false;
-          document.getElementById('voiceBtn').disabled = false;
           input.focus();
           return;
         }
   
         if (data.status === 'processing') {
+          // IMPORTANT: En mode initial, on ne redirige jamais automatiquement.
           const { mode } = getParams();
           if (mode !== 'initial' && data.redirect_url) {
+            // Sécurité: rediriger seulement si l'URL contient le même client_id
             try {
               const u = new URL(data.redirect_url);
               const rid = u.searchParams.get('client_id');
@@ -862,36 +376,28 @@
                 window.location.href = data.redirect_url;
                 return;
               } else {
-                showError(`Redirect refusée: client_id différent.`);
+                showError(`Redirect refusée: client_id différent (front=${clientId} redirect=${rid}).`);
               }
             } catch(_) {
-              showError("Redirect_url invalide.");
+              showError("Redirect_url invalide reçue du backend.");
             }
           }
   
           addMessage('agent', 'Traitement en cours...');
           input.disabled = false;
           document.getElementById('sendBtn').disabled = false;
-          document.getElementById('voiceBtn').disabled = false;
           input.focus();
           return;
         }
   
-        addMessage('agent', data.question || data.message || 'Une erreur est survenue.');
+        addMessage('agent', data.question || data.message || 'Une erreur est survenue. Pouvez-vous reformuler ?');
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
-        document.getElementById('voiceBtn').disabled = false;
   
       } catch (e) {
-        console.error('❌ Send error:', e);
-        showError("Erreur réseau. Réessayez.");
+        showError("Erreur réseau lors de l'envoi. Réessaie.");
         input.disabled = false;
         document.getElementById('sendBtn').disabled = false;
-        document.getElementById('voiceBtn').disabled = false;
-        
-        // Remove loading indicator on error
-        const systemMessages = document.querySelectorAll('.message.system');
-        systemMessages.forEach(msg => msg.remove());
       }
     }
   </script>  
